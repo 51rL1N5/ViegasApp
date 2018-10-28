@@ -8,42 +8,99 @@
 # importacao das bibliotecas
 from socket import *                       # sockets
 from threading import Thread
-
-
+from classes import *
+"""
+ ----- Lista de comandos ----------
+ 0 -> mandar para todos
+ 1 -> pedido de lista de cleintes
+ 2 -> mudar de nome
+ 3 -> mandar mensagem privado
+ 4 -> sair
+"""
 class Connected(Thread):
     def __init__(nickName, socket, addr):
         Thread.__init__(self)
         self.nickName = nickName
-        self.socket = socket
-        self.ip  = addr[0]
-        self.port= addr[1]
+        self.socket   = socket
+        self.addr     = addr
+        self.ip       = addr[0]
+        self.port     = addr[1]
+
+        self.lastFrame= Frame()
+
+        self.connected= True
+        self.flag = False
+        self.private= False
+    def __str__(self):
+        if self.private == True:
+            return self.nickName + '(privado)'
+        return self.nickName
+
     def run(self): #metodo para a thread
-        while True:
-            frame  = socket.recv(56) # todo frame ocupa no maximo 56 bytes
-            
-
+        while self.connected:
+            # WARNING alterar limite para 56 bytes depois que estiver funcionando
+            frame  = socket.recv(1024) # todo frame ocupa no maximo 56 bytes
+            frame  = pickle.loads(frame)
+            self.flag = True
+            while self.flag: #aguarda o pedido ser tratado pelo server
+                pass
         self.socket.close()
-    def send(self,msg, dest): #dest eh outro Connected
+    def exit(self):
+        self.connected = False
+        self.flag = False
+        self.socket.close()
 
-        self.socket.send(len(msg).encode('UTF-8')) #tamanho da mensagem
-        self.socket.send(self.ip.encode('UTF-8'))  #ip de origem da mensagem
-        self.socket.send(dest.ip.encode('UTF-8'))  #ip destino
-        self.socket.send(self.nickName.encode('UTF-8'))
-        self.socket.send(b'0')
-        self.socket.send(msg.encode('UTF-8'))
+
+    def send(self,msg, dest): #dest eh outro Connected
+        frame = Frame(dest.ip, self.ip, self.nickname, b'0', msg)
+        self.socket.sendto(pickle.dumps(frame), dest.addr)
+        pass
+# #########################################################################################
+
+port = 2626
 
 class Server(Thread):
     def __init__(self,port):
         Thread.__init__(self)
         # configura o servidor
         self.serverName = ''                            # ip do servidor (em branco)
-        self.serverPort = port                         # porta a se conectar
+        self.serverPort = port                          # porta a se conectar
         self.serverSocket = socket(AF_INET,SOCK_STREAM) # criacao do socket TCP
         self.serverSocket.bind((serverName,serverPort)) # bind do ip do servidor com a porta
         # inicia o servidor
-        self.connecteds = list()#vetor de client
+        self.connecteds = []                            # vetor de client
 
         self.finish = False
+
+    def handle(self,user):
+        # mandar mensagem para todos
+        if  user.lasframe.command == 0:
+            send_for_all(user.lasframe.data, user.nickName)
+
+        elif user.frame.command == 1: # pedir lista de clientes
+            send_for_all('------- Lista de gente ---------\n', '')
+            for connected in connecteds:
+                send_for_all('', connected.nickName)
+            send_for_all('--------------------------------', '')
+        elif user.frame.command == 2: #mudar de nome
+            newNick = user.lastFrame.data
+            msg = 'Nick do '+ user.nickName + ' agora é ' + newNick
+            user.nickName = newNick
+            send_for_all(msg , '') #mensagem para todos
+        elif user.frame.command == 3:
+            # dest = user.lastFrame.data
+            print('Comando 3- Ainda nao implementado')
+            pass
+        elif user.frame.command == 4:
+            msg = user.nickName + ' saiu!'
+            user.exit()
+            user.join()
+
+            send_for_all(msg , '')
+        elif user.frame.command == 5:
+            print('Comando 5- Ainda nao implementado')
+        user.flag = False #pedido atendido
+
     def run(self):
         # função para chamar a thread do bate papo
         print ('Servidor TCP esperando conexoes na porta %d ...' % (serverPort))
@@ -62,59 +119,34 @@ class Server(Thread):
               continue
 
           connected = Connected(nickname, addr, connectionSocket)
-
-          self.clients.append(connected)
+          connected.start()
+          self.connecteds.append(connected)
           welcome = nickname + "\nacabou de entrar\n"
-          send_for_all(welcome)
-
-        serverSocket.close() # encerra o socket do servido
-
-
+          send_for_all(welcome, '')
+          #Verifica quais conectados estao requisitando coisas
+          for user in connecteds:
+              if user.flag == True:
+                  handle(user)
         """
         A thread principal irá recepcionar o usuário novo
         Perguntará o seu nick.
 
         Em sequência, ela enviara uma Tupla contendo o ip do usuário + nickname
         """
-        pass
+        # pass
 
-    def send_for_all(message):
+    def send_for_all(message, orig):
         # ENVIAR PRA GALERA KKKKKKK
         try:
-            for user in self.clients:
-                user.socket.send(message)
+            for user in self.connecteds:
+                if user.nickName != orig:
+                    user.sendto(message, user.addr)
         except Error:
             print ("ERROR ON CHAT -> %s" % Error)
-        pass
+        # pass
+s = Server(port)
+s.start()
 
-    def chat():
-        """
-        Função do chat (SALVE JOAO DÓRIA Kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk???????)
-        """
-
-        print("Chat iniciado com sucesso")
-
-        while 1:
-            # RECEBER MENSAGEM
-            message = self.socket.recv(1024)
-            prompt = message.slice("(")
-            directive = prompt[1].slice(")")
-
-            # Tratar mensagem, para caso ser um comando
-
-            if   prompt[1] == "lista":
-                for user in self.clients:
-                    send_for_all("<" + str(user.nick) +", " + str(user.IP) + ", " + str(user.socket))
-            elif prompt[1] == "privado":
-
-            elif prompt[1] == "nome":
-                """BOTAR AQUI O NICK DO CLIENTE AGORA É NOVO-JOAO-DORIA"""
-                send_for_all()
-            elif prompt[1] == "sair":
-
-                """ BOTAR AQUI QUE O CARA ACABOU DE SAIR, TEM QUE PEGAR O NOME DELE"""
-                send_for_all()
-            else:
-                send_for_all(message)
-
-        pass
+while not s.finish:
+    pass
+s.join()

@@ -8,7 +8,8 @@
 # importacao das bibliotecas
 from socket import *                       # sockets
 from threading import Thread
-
+from classes import Frame
+import pickle
 
 class Connected(Thread):
     def __init__(nickName, socket, addr):
@@ -20,17 +21,12 @@ class Connected(Thread):
     def run(self): #metodo para a thread
         while True:
             frame  = socket.recv(56) # todo frame ocupa no maximo 56 bytes
-
+            frame = pickle.load(frame)
+            frame
 
         self.socket.close()
     def send(self,msg, dest): #dest eh outro Connected
-
-        self.socket.send(len(msg).encode('UTF-8')) #tamanho da mensagem
-        self.socket.send(self.ip.encode('UTF-8'))  #ip de origem da mensagem
-        self.socket.send(dest.ip.encode('UTF-8'))  #ip destino
-        self.socket.send(self.nickName.encode('UTF-8'))
-        self.socket.send(b'0')
-        self.socket.send(msg.encode('UTF-8'))
+        frame =
 
 class Server(Thread):
     def __init__(self,port):
