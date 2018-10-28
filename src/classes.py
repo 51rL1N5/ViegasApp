@@ -1,7 +1,19 @@
 # Classe
 # Frame
 # ...
+class Command:
+    PUBLIC      = 0
+    LIST        = 1
+    CHANGE_NAME = 2
+    PRIVATE     = 3
+    EXIT        = 4
+    INVALID     = 5
+    OK          = 6
+    NEW         = 7
+    LIST_SIZE   = 8 #numero de conectados
 
+
+LEN_MAX = 56
 
 class Frame:
     def __init__(self, ip_orig= None, ip_dest= None, nickname= None, command=None, data= None, bitstream = None):
@@ -44,9 +56,9 @@ class Frame:
         self.length  = int(bitstream[0])
         self.ip_orig = self.makeIP_fromBitstream(bitstream[1:5])
         self.ip_dest = self.makeIP_fromBitstream(bitstream[5:9])
-        self.nickName= bitstream[9:16].decode('utf-8')
-        self.command = int(bitstream[16])
-        self.data    = bitstream[17:17 + self.length].decode('utf-8')
+        self.nickName= bitstream[9:15].decode('utf-8')
+        self.command = int(bitstream[15])
+        self.data    = bitstream[16:16 + self.length].decode('utf-8')
 
     def __str__(self):
         out = 'Length:\t'  + str(self.length) + '\n'
@@ -57,17 +69,13 @@ class Frame:
         out+= 'Data:\t' + self.data           + '\n'
         return out
 
-class User:
-    def __init__(self, nickname, addr):
-        self.nickName = nickname
-        self.addr     = addr
-ip_orig = '192.168.0.1'
-ip_dest = '192.168.0.2'
-nick = 'Gabriel'
-command = 30
-data = 'Hello Frame'
-f = Frame(ip_orig, ip_dest, nick, command, data)
-print(f)
-print(bytes(f))
-bitstream = bytes(f)
-print(Frame(bitstream = bitstream))
+# ip_orig = '192.168.0.1'
+# ip_dest = '192.168.0.2'
+# nick = 'Luis  '
+# command = 30
+# data = 'Hello Frame'
+# f = Frame(ip_orig, ip_dest, nick, command, data)
+# print(f)
+# print(bytes(f))
+# bitstream = bytes(f)
+# print(Frame(bitstream = bitstream))
