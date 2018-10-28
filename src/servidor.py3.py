@@ -95,7 +95,7 @@ class Server(Thread):
           frame = Frame(bitstream = bitstream)
           if frame.command is not cmd.NEW:
               # pedido de nova conexao invalido
-              connectionSocket.send(Frame(self.serverSocket.getsocketname()[0], connected.ip, 'SERVER', 5, ''))
+              connectionSocket.send(Frame(self.serverSocket.getsocketname()[0], connected.ip, 'SERVER', cmd.INVALID, ''))
               continue
 
           print(frame.data, '  Acabou de entrar!!')
@@ -105,7 +105,7 @@ class Server(Thread):
           # Cria um novo objeto connected e adiciona-o a lista de connecteds
           connected = Connected(frame.data, connectionSocket, addr)
           # confirmar para o client que ele foi adiciona ao servidor
-          connected.send(Frame(self.serverSocket.getsocketname()[0], connected.ip, 'SERVER', 6, ''))
+          connected.send(Frame(self.serverSocket.getsocketname()[0], connected.ip, 'SERVER', cmd.OK, ''))
           connected.start()
 
           self.connecteds.append(connected)
@@ -158,9 +158,9 @@ class Server(Thread):
             if orig is not None:
                 #mensagem de um conectado
                 if  user.nickName is not orig.nickName:
-                    user.send(Frame(orig.ip, user.ip, orig.nickName, 0, messsage))
+                    user.send(Frame(orig.ip, user.ip, orig.nickName, cmd.PUBLIC, messsage))
             else: #mensagem do servidor
-                user.send(Frame('0.0.0.0', user.ip, 'SERVER', 0, messsage))
+                user.send(Frame('0.0.0.0', user.ip, 'SERVER', cmd.SERVER , messsage))
 port = 2626
 s = Server(port)
 s.start()

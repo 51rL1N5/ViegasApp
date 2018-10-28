@@ -11,9 +11,14 @@ class Command:
     OK          = 6
     NEW         = 7
     LIST_SIZE   = 8 #numero de conectados
+    LIST_END    = 9
+    SERVER      = 200#mensagens do servidor, devem ser exibidas para todos os usuarios
+    NONE        = 255
+class Mode:
+    PUBLIC  = 0  #MODO public
+    PRIVATE = 1  #modo privado
 
-
-LEN_MAX = 56
+LEN_MAX = 56 #tamanho maximo de um frame
 
 class Frame:
     def __init__(self, ip_orig= None, ip_dest= None, nickname= None, command=None, data= None, bitstream = None):
