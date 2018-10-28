@@ -26,7 +26,7 @@ class Connected(Thread):
         self.ip       = addr[0]
         self.port     = addr[1]
 
-        self.lastFrame= Frame()
+        self.lastFrame = Frame()
 
         self.connected= True
         self.flag = False
@@ -39,8 +39,8 @@ class Connected(Thread):
     def run(self): #metodo para a thread
         while self.connected:
             # WARNING alterar limite para 56 bytes depois que estiver funcionando
-            frame  = socket.recv(1024) # todo frame ocupa no maximo 56 bytes
-            frame  = pickle.loads(frame)
+            recv = socket.recv(1024) # todo frame ocupa no maximo 56 bytes
+            frame = pickle.loads(recv)
             self.flag = True
             while self.flag: #aguarda o pedido ser tratado pelo server
                 pass
