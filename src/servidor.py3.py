@@ -20,7 +20,7 @@ class Connected(Thread):
     def run(self): #metodo para a thread
         while True:
             frame  = socket.recv(56) # todo frame ocupa no maximo 56 bytes
-            
+
 
         self.socket.close()
     def send(self,msg, dest): #dest eh outro Connected
