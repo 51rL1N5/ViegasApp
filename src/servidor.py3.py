@@ -57,13 +57,9 @@ class Connected(Thread):
 
     def send(self,msg, dest): #dest eh outro Connected
         frame = Frame(dest.ip, self.ip, self.nickName, 0, msg)
-        # self.socket.sendto(pickle.dumps(frame), dest.addr)
         self.socket.send(pickle.dumps(frame))
         # pass
-# #########################################################################################
-
-port = 2626
-
+##########################################################################################
 class Server(Thread):
     def __init__(self,port):
         Thread.__init__(self)
@@ -78,7 +74,6 @@ class Server(Thread):
         self.finish = False
 
     def handle(self,user):
-
         # mandar mensagem para todos
         if  user.lastFrame.command == 0:
             self.send_for_all(user.lastFrame.data, user.nickName)
@@ -106,7 +101,6 @@ class Server(Thread):
         elif user.lastFrame.command == 5:
             print('Comando 5- Ainda nao implementado')
         user.flag = False #pedido atendido
-
 
     def run(self):
         # função para chamar a thread do bate papo
@@ -157,6 +151,8 @@ class Server(Thread):
         # except:
         #     print ('EROU')
         # pass
+
+port = 2626
 s = Server(port)
 s.start()
 
