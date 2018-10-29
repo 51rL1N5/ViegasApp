@@ -14,27 +14,31 @@ class Command:
     LIST_END    = 9
     SERVER      = 200#mensagens do servidor, devem ser exibidas para todos os usuarios
     NONE        = 255
+
 class Mode:
     PUBLIC  = 0  #MODO public
     PRIVATE = 1  #modo privado
-
-LEN_MAX = 56 #tamanho maximo de um frame
+class Const:
+    LEN_MAX = 56 #tamanho maximo de um frame
+    LEN_MIN = 16
 
 class Frame:
-    def __init__(self, ip_orig= None, ip_dest= None, nickname= None, command=None, data= None, bitstream = None):
+    def __init__(self, ip_orig= '', ip_dest= '', nickname= '', command=-1, data= '', bitstream = None):
+
+        self.length   = len(data)
+        self.ip_orig  = ip_orig
+        self.ip_dest  = ip_dest
+        self.nickName = nickname
+        self.command  = command
+        self.data     = data
+
         if bitstream is not None:
             self.fromBitstream(bitstream)
             # print('Construtor bitstream')
-        elif (ip_orig is not None) and (ip_dest is not None) and (nickname is not None) and (command is not None) and (data is not None):
+        # elif (ip_orig is not None) and (ip_dest is not None) and (nickname is not None) and (command is not None) and (data is not None):
             # print('Construtor Default')
-            self.length   = len(data)
-            self.ip_orig  = ip_orig
-            self.ip_dest  = ip_dest
-            self.nickName = nickname
-            self.command  = command
-            self.data     = data
-
-
+    def bitStuff(self,nick):
+        pass
     def buildBitstream(self):
         bitstream  = bytes(   [self.length]  )
         bitstream += bytes(   list( map(int, self.ip_orig.split('.')) )   )
@@ -50,6 +54,7 @@ class Frame:
         return len(bitstream)
     def makeIP_fromBitstream(self,ip_bitstream):
         ip_bits = ip_bitstream
+
         ip_tmp = str( list( map(int, ip_bits) ) ) # saida do tipo: '[192, 168, 0, 1]'
         ip_tmp = ip_tmp.replace(' ','') #remove espacos
         ip_tmp = ip_tmp.replace(',','.')
@@ -63,15 +68,15 @@ class Frame:
         self.ip_dest = self.makeIP_fromBitstream(bitstream[5:9])
         self.nickName= bitstream[9:15].decode('utf-8')
         self.command = int(bitstream[15])
-        self.data    = bitstream[16:16 + self.length].decode('utf-8')
+        self.data    = bitstream[16:].decode('utf-8')
 
     def __str__(self):
-        out = 'Length:\t'  + str(self.length) + '\n'
-        out+= 'IP orig:\t' + self.ip_orig     + '\n'
-        out+= 'IP dest:\t' + self.ip_dest     + '\n'
-        out+= 'NickName:\t'+ self.nickName    + '\n'
-        out+= 'Command:\t' + str(self.command)+ '\n'
-        out+= 'Data:\t' + self.data           + '\n'
+        out = 'Length:\t'  + str(self.length)  + '\n'
+        out+= 'IP orig:\t' + str(self.ip_orig) + '\n'
+        out+= 'IP dest:\t' + str(self.ip_dest) + '\n'
+        out+= 'NickName:\t'+ str(self.nickName)+ '\n'
+        out+= 'Command:\t' + str(self.command) + '\n'
+        out+= 'Data:\t'    + str(self.data)    + '\n'
         return out
 
 # ip_orig = '192.168.0.1'

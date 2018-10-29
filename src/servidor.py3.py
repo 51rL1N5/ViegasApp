@@ -10,7 +10,7 @@ from socket import *                       # sockets
 from threading import Thread
 from classes import Frame
 from classes import Command as cmd
-
+from classes import Const as const
 """
  ----- Lista de comandos ----------
  0 -> mandar para todos
@@ -46,7 +46,7 @@ class Connected(Thread):
     def run(self): #metodo para a thread
         while self.connected:
             # WARNING alterar limite para 56 bytes depois que estiver funcionando
-            bitstream = self.socket.recv(LEN_MAX) # todo frame ocupa no maximo 56 bytes
+            bitstream = self.socket.recv(const.LEN_MAX) # todo frame ocupa no maximo 56 bytes
             self.lastFrame = Frame(bitstream = bitstream)
             self.flag = True
 
@@ -59,7 +59,7 @@ class Connected(Thread):
         self.socket.close()
 
     def send(self,frame): #dest eh outro Connected
-        self.socket.send( frame )
+        self.socket.send( bytes(frame) )
 
 ##########################################################################################
 class Server(Thread):
@@ -84,32 +84,41 @@ class Server(Thread):
 
         while not self.finish:
           try:
+              # print('Aguardando conexao')
               connectionSocket, addr = self.serverSocket.accept() # aceita as conexoes dos clientes
+              print('Alguem se conectou...')
           except:
+              # print('Verificando os conectados...')
               for user in self.connecteds:
                   if user.flag == True:
                       self.process(user)
               continue
 
-          bitstream = connectionSocket.recv(LEN_MAX)
+          bitstream = connectionSocket.recv(const.LEN_MAX)
+          print('nova conexao enviou o frame:\t', bitstream)
+          if len(bitstream) < 16:
+            connectionSocket.close()
+            continue
+          print('reconstruindo frame...')
           frame = Frame(bitstream = bitstream)
+          print(frame)
+          print(bytes(frame))
           if frame.command is not cmd.NEW:
               # pedido de nova conexao invalido
-              connectionSocket.send(Frame(self.serverSocket.getsocketname()[0], connected.ip, 'SERVER', cmd.INVALID, ''))
+              connectionSocket.send( bytes(Frame(self.serverSocket.getsockname()[0], connectionSocket.getsockname()[0] , 'SERVER', cmd.INVALID, '')) )
+              print('Conexao rejeitada')
               continue
 
           print(frame.data, '  Acabou de entrar!!')
-          if len(nickname) == 0:
-              connectionSocket.close()
-              continue
+
           # Cria um novo objeto connected e adiciona-o a lista de connecteds
           connected = Connected(frame.data, connectionSocket, addr)
           # confirmar para o client que ele foi adiciona ao servidor
-          connected.send(Frame(self.serverSocket.getsocketname()[0], connected.ip, 'SERVER', cmd.OK, ''))
+          connected.send( bytes(Frame(self.serverSocket.getsockname()[0], connected.ip, 'SERVER', cmd.OK, '')))
           connected.start()
 
           self.connecteds.append(connected)
-          welcome = str(nickname) + 'acabou de entrar!'
+          welcome = str(connected.nickName) + 'acabou de entrar!'
           self.send_for_all(welcome)
 
         """
@@ -126,10 +135,10 @@ class Server(Thread):
             self.send_for_all(user.lastFrame.data, user)
 
         elif user.lastFrame.command is cmd.LIST: # pedir lista de clientes
-            for connected in self.connecteds:
-                user.send(Frame(self.serverSocket.getsocketname()[0], user.ip, 'SERVER', 1, str(connected)))
+            for other in self.connecteds:
+                user.send( bytes(Frame(self.serverSocket.getsockname()[0], user.ip, 'SERVER', 1, str(other))))
             #para confirmar o final da lista
-            user.send(Frame(self.serverSocket.getsocketname()[0], user.ip, 'SERVER', 6, ''))
+            user.send( bytes(Frame(self.serverSocket.getsockname()[0], user.ip, 'SERVER', 6, '')))
         elif user.lastFrame.command is cmd.CHANGE_NAME: #mudar de nome
             # falta verificar se nome ja esta em uso...
             newNick = user.lastFrame.data
@@ -158,10 +167,10 @@ class Server(Thread):
             if orig is not None:
                 #mensagem de um conectado
                 if  user.nickName is not orig.nickName:
-                    user.send(Frame(orig.ip, user.ip, orig.nickName, cmd.PUBLIC, messsage))
+                    user.send(bytes(Frame(orig.ip, user.ip, orig.nickName, cmd.PUBLIC, message)))
             else: #mensagem do servidor
-                user.send(Frame('0.0.0.0', user.ip, 'SERVER', cmd.SERVER , messsage))
-port = 2626
+                user.send((Frame('0.0.0.0', user.ip, 'SERVER', cmd.SERVER , message)))
+port = 3030
 s = Server(port)
 s.start()
 
