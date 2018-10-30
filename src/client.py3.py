@@ -32,23 +32,19 @@ class Client(Thread):
         self.mode = Mode.PUBLIC
         self.dest_private = '' #nick do usuario com quem este esta em privado
     def run(self):
-        # Aguarda confirmacao de usuario criado...
-        # frame_send = bytes( Frame(self.ip,  self.ip_server, self.name, cmd.NEW, self.name) )
-        print('client enviou:\t',  bytes( Frame(self.ip,  self.ip_server, self.name, cmd.NEW, self.name) ) )
-        print('\t', Frame(self.ip,  self.ip_server, self.name, cmd.NEW, self.name))
-
         self.sock.connect( (self.ip,self.port_server) )
         self.sendFrame( Frame(self.ip,  self.ip_server, self.name, cmd.NEW, self.name) )
-        # self.sock.send( bytes( Frame(self.ip,  self.ip_server, self.name, cmd.NEW, self.name) ) )
+        # recebe respota do servidor
         frame_rec = self.recvFrame()
 
-        if frame_rec.command is cmd.INVALID:
+        if frame_rec.command == cmd.INVALID:
             raise Exception('Servidor rejeitou cadastrar novo usuario')
-        print('conexao feita')
+        print('Conectado com o servidor!')
 
         while not self.finish:
             frame_rec = self.recvFrame()
             self.process(frame_rec)
+
     def sendFrame(self, frame):
         self.sock.send(bytes(frame))
 
@@ -91,34 +87,26 @@ class Client(Thread):
         func = func.lower()
         arg = arg.lower()
 
-        # print('func:',func)
-        # print('arg:',arg)
-        #
-        # print('func is exit?\t', func is 'exit')
-        # print('func:',func)
-        # print('exit:','exit')
-        # para uma entrada no formato: 'func(arg)'
-
         # busca por private(...)
-        if func is 'private':
+        if func == 'private':
             print('Comando ainda nao implementado')
         # busca por list()
-        elif func is 'list':
+        elif func == 'list':
             print('request List, em andamento...')
             self.requestList()
         # busca por exit()
-        elif func is 'exit':
+        elif func == 'exit':
             print('exit, em andamento...')
             r = cmd.EXIT
         # busca por list_size()
-        elif func is 'list_size':
+        elif func == 'list_size':
             print('request List_Size, em andamento...')
             r = cmd.LIST_SIZE
         # busca por change_name(...)
-        elif func is 'change_name':
+        elif func == 'change_name':
             print('Comando ainda nao implementado')
         # busca por help()
-        elif func is 'help':
+        elif func == 'help':
             self.help();
             return (cmd.NONE, '')
         else:#ignorar
@@ -127,7 +115,6 @@ class Client(Thread):
         return (r,arg)
 
     def readLineEdit(self, line): #identifica as palavras chaves na linha lida no temrinal e encaminha para o servidor
-        print('readLineEdit:', line)
         command, arg = self.identify_command(line)
 
         if command is cmd.PUBLIC:
@@ -135,6 +122,7 @@ class Client(Thread):
         elif command is cmd.EXIT:
             print('Finalizando o cliente...')
             self.sock.send( bytes(Frame(self.ip, self.ip_server, self.name, cmd.EXIT, arg)) )
+
             self.exit()
         else:#ignorar
             pass

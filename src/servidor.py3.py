@@ -95,21 +95,15 @@ class Server(Thread):
               continue
 
           bitstream = connectionSocket.recv(const.LEN_MAX)
-          print('nova conexao enviou o frame:\t', bitstream)
           if len(bitstream) < 16:
             connectionSocket.close()
             continue
-          print('reconstruindo frame...')
           frame = Frame(bitstream = bitstream)
-          print(frame)
-          print(bytes(frame))
           if frame.command is not cmd.NEW:
               # pedido de nova conexao invalido
               connectionSocket.send( bytes(Frame(self.serverSocket.getsockname()[0], connectionSocket.getsockname()[0] , 'SERVER', cmd.INVALID, '')) )
-              print('Conexao rejeitada')
+              # print('Conexao rejeitada')
               continue
-
-          print(frame.data, '  Acabou de entrar!!')
 
           # Cria um novo objeto connected e adiciona-o a lista de connecteds
           connected = Connected(frame.data, connectionSocket, addr)
@@ -150,10 +144,10 @@ class Server(Thread):
             print('Command 3- Ainda nao implementado')
         elif user.lastFrame.command is cmd.EXIT:
             msg = user.nickName + ' saiu!'
+            self.send_for_all(msg)
             user.exit()
             user.join()
             self.connecteds.remove(user)
-            self.send_for_all(msg)
         # elif user.lastFrame.command == 5:
         #     print('Comando 5- Ainda nao implementado'
         else:
@@ -169,7 +163,7 @@ class Server(Thread):
                 if  user.nickName is not orig.nickName:
                     user.send(bytes(Frame(orig.ip, user.ip, orig.nickName, cmd.PUBLIC, message)))
             else: #mensagem do servidor
-                user.send((Frame('0.0.0.0', user.ip, 'SERVER', cmd.SERVER , message)))
+                user.send( bytes((Frame('0.0.0.0', user.ip, 'SERVER', cmd.SERVER , message))) )
 port = 3030
 s = Server(port)
 s.start()

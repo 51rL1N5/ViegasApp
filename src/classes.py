@@ -34,9 +34,6 @@ class Frame:
 
         if bitstream is not None:
             self.fromBitstream(bitstream)
-            # print('Construtor bitstream')
-        # elif (ip_orig is not None) and (ip_dest is not None) and (nickname is not None) and (command is not None) and (data is not None):
-            # print('Construtor Default')
     def bitStuff(self,nick):
         pass
     def buildBitstream(self):
