@@ -22,6 +22,7 @@ class Const:
     LEN_MAX = 56 #tamanho maximo de um frame
     LEN_MIN = 16
 
+
 class Frame:
     def __init__(self, ip_orig= '', ip_dest= '', nickname= '', command=-1, data= '', bitstream = None):
 

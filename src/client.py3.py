@@ -15,7 +15,7 @@ class Client(Thread):
             name += (6 - len(name))*' '
         self.name = name
         self.sock = socket(AF_INET,SOCK_STREAM)
-
+        # self.sock.settimeout(30)
         # try:
         # except Exception as erro:
             # Exception(erro)
@@ -46,10 +46,20 @@ class Client(Thread):
             self.process(frame_rec)
 
     def sendFrame(self, frame):
-        self.sock.send(bytes(frame))
+        try:
+            self.sock.send(bytes(frame))
+        except:
+            print('FALHA NA COMUNICAÇÃO COM SERVIDOR!!')
+            self.exit()
+            return
 
     def recvFrame(self):
-        bitstream = self.sock.recv(const.LEN_MAX)
+        try:
+            bitstream = self.sock.recv(const.LEN_MAX)
+        except:
+            print("FALHA NA COMUNICAÇÃO COM O Servidor!!")
+            self.exit()
+            exit()
         if len(bitstream) < const.LEN_MIN:
             return Frame()
         return Frame(bitstream = bitstream)
@@ -116,13 +126,12 @@ class Client(Thread):
 
     def readLineEdit(self, line): #identifica as palavras chaves na linha lida no temrinal e encaminha para o servidor
         command, arg = self.identify_command(line)
-
         if command is cmd.PUBLIC:
-            self.sock.send( bytes(Frame(self.ip, self.ip_server, self.name, cmd.PUBLIC, arg)) )
+            self.sendFrame
+            self.sendFrame( Frame(self.ip, self.ip_server, self.name, cmd.PUBLIC, arg) )
         elif command is cmd.EXIT:
             print('Finalizando o cliente...')
-            self.sock.send( bytes(Frame(self.ip, self.ip_server, self.name, cmd.EXIT, arg)) )
-
+            self.sendFrame( Frame(self.ip, self.ip_server, self.name, cmd.EXIT, arg) )
             self.exit()
         else:#ignorar
             pass
