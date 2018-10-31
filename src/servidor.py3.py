@@ -11,6 +11,7 @@ from threading import Thread
 from classes import Frame
 from classes import Command as cmd
 from classes import Const as const
+# from classes import MySocket
 """
  ----- Lista de comandos ----------
  0 -> mandar para todos
@@ -29,7 +30,7 @@ class Connected(Thread):
         # self.addr     = addr
         self.nickName = nickName
         self.socket   = socket
-        self.socket.settimeout(1)
+        self.socket.settimeout(10)
         self.ip       = addr[0]
         self.port     = addr[1]
 
@@ -40,13 +41,14 @@ class Connected(Thread):
         self.private= False
 
     def __str__(self):
+        name = ''
         if self.private == True:
-            return self.nickName + '(privado)'
-        return self.nickName
+            name = self.nickName + '(privado)'
+        name = self.nickName
+        return name + ', ' +str(self.ip) + ', ' + str(self.port)
 
     def run(self): #metodo para a thread
         while self.connected:
-            # WARNING alterar limite para 56 bytes depois que estiver funcionando
             try:
                 bitstream = self.socket.recv(const.LEN_MAX) # todo frame ocupa no maximo 56 bytes
                 self.lastFrame = Frame(bitstream = bitstream)
@@ -60,6 +62,7 @@ class Connected(Thread):
 
     def exit(self):
         self.connected = False
+        self.flag = False
         self.socket.close()
 
     def sendFrame(self,frame): #dest eh outro Connected
@@ -68,7 +71,6 @@ class Connected(Thread):
         except:
             self.socket.close()
             self.exit()
-
 ##########################################################################################
 class Server(Thread):
     def __init__(self,port):
@@ -90,27 +92,32 @@ class Server(Thread):
         self.serverSocket.settimeout(0.5)
         self.serverSocket.listen(1)                     # socket pronto para 'ouvir' conexoes
 
+        """
+        A thread principal irá recepcionar o usuário novo
+        Perguntará o seu nick.
+
+        Caso nao haja novos pedidos de conexao, o servidor ira tratar dos pedidos
+        feitos pelos usuarios conectados.
+        """
         while not self.finish:
           try:
-              # print('Aguardando conexao')
               connectionSocket, addr = self.serverSocket.accept() # aceita as conexoes dos clientes
-              print('Alguem se conectou...')
           except:
-              # print('Verificando os conectados...')
               for user in self.connecteds:
                   if user.flag == True:
                       try:
                           self.process(user)
-                      except: #caso de algum erro na comunicacao, remover da lista e garantir que foi fechado
+                      except Exception as erro: #caso de algum erro na comunicacao, remover da lista e garantir que foi fechado
                           self.connecteds.remove(user)
-                          user.close()
+                          user.exit()
+                          user.join()
               continue
 
           try:
               bitstream = connectionSocket.recv(const.LEN_MAX)
           except:
               continue
-          if len(bitstream) < 16:
+          if len(bitstream) < const.LEN_MIN:
             connectionSocket.close()
             continue
           frame = Frame(bitstream = bitstream)
@@ -118,60 +125,44 @@ class Server(Thread):
               # pedido de nova conexao invalido
               try:
                   connectionSocket.send( bytes(Frame(self.serverSocket.getsockname()[0], connectionSocket.getsockname()[0] , 'SERVER', cmd.INVALID, '')) )
-              except:
-                  pass
-              # print('Conexao rejeitada')
+              except Exception as erro:
+                  connectionSocket.close()
               continue
 
           # Cria um novo objeto connected e adiciona-o a lista de connecteds
           connected = Connected(frame.data, connectionSocket, addr)
           # confirmar para o client que ele foi adiciona ao servidor
           try:
-              connected.send( bytes(Frame(self.serverSocket.getsockname()[0], connected.ip, 'SERVER', cmd.OK, '')))
-          except:
+              connected.sendFrame( bytes(Frame(self.serverSocket.getsockname()[0], connected.ip, 'SERVER', cmd.OK, '')))
+          except Exception as erro:
               continue
           connected.start()
 
           self.connecteds.append(connected)
-          welcome = str(connected.nickName) + 'acabou de entrar!'
+          welcome = str(connected.nickName) + '\tacabou de entrar!'
+          print(welcome)
           self.send_for_all(welcome)
-
-        """
-        A thread principal irá recepcionar o usuário novo
-        Perguntará o seu nick.
-
-        Em sequência, ela enviara uma Tupla contendo o ip do usuário + nickname
-        """
 
     def process(self,user):
         # mandar mensagem para todos
-        # connected = user #talvez seja necessario essa linha...
-        print('Processando Frame:', str(user.lastFrame))
 
         if  user.lastFrame.command is cmd.PUBLIC:
             self.send_for_all(user.lastFrame.data, user)
-        elif user.lastFrame.command == 99:
-            print('Desligando o servidor...')
-            for other in self.connecteds:
-                user.close()
-                user.exit()
-                self.exit()
         elif user.lastFrame.command == cmd.LIST: # pedir lista de clientes
-            print('LISTA DE CONECTADOS:\n')
             for other in self.connecteds:
                 try:
-                    user.send( Frame(self.serverSocket.getsockname()[0], user.ip, 'SERVER', 1, str(other)))
-                    print(other)
+                    user.sendFrame( Frame(self.serverSocket.getsockname()[0], user.ip, 'SERVER', cmd.LIST, str(other)))
                 except:
-                    user.close()
+                    user.join()
                     user.exit()
                     self.connecteds.remove(user)
+            user.sendFrame( Frame(self.serverSocket.getsockname()[0], user.ip, 'SERVER', cmd.LIST_END, str(other)))
             #para confirmar o final da lista
             try:
-                user.send( Frame(self.serverSocket.getsockname()[0], user.ip, 'SERVER', 6, ''))
+                user.sendFrame( Frame(self.serverSocket.getsockname()[0], user.ip, 'SERVER', 6, ''))
             except:
-                user.close()
                 user.exit()
+                user.join()
                 self.connecteds.remove(user)
         elif user.lastFrame.command is cmd.CHANGE_NAME: #mudar de nome
             # falta verificar se nome ja esta em uso...
@@ -188,13 +179,13 @@ class Server(Thread):
             user.exit()
             user.join()
             self.connecteds.remove(user)
-        # elif user.lastFrame.command == 5:
-        #     print('Comando 5- Ainda nao implementado'
+        elif user.lastFrame.command is cmd.SHUTDOWN:
+            if user.nickName == 'Sadmin':
+                self.exit()
         else:
             #ignorar
             print('comando nao reconhecido')
         user.flag = False #pedido atendido
-
     def send_for_all(self,message, orig = None):
         # ENVIAR PRA GALERA
         for user in self.connecteds:
@@ -202,19 +193,31 @@ class Server(Thread):
                 #mensagem de um conectado
                 if  user.nickName is not orig.nickName:
                     try:
-                        user.send(bytes(Frame(orig.ip, user.ip, orig.nickName, cmd.PUBLIC, message)))
+                        user.sendFrame(bytes(Frame(orig.ip, user.ip, orig.nickName, cmd.PUBLIC, message)))
                     except:
-                        user.close()
                         user.exit()
+                        usr.join()
                         self.connecteds.remove(user)
 
             else: #mensagem do servidor
                 try:
-                    user.send( bytes((Frame('0.0.0.0', user.ip, 'SERVER', cmd.SERVER , message))) )
+                    user.sendFrame( bytes((Frame('0.0.0.0', user.ip, 'SERVER', cmd.SERVER , message))) )
                 except:
-                    user.close()
                     user.exit()
+                    user.join()
                     self.connecteds.remove(user)
+    def exit(self):
+        self.send_for_all('SERVIDOR ESTA SENDO DESLIGADO!')
+        self.finish = True
+        for user in self.connecteds():
+            user.exit()
+            user.join()
+            try:
+                self.connecteds.remove(user)
+            except:
+                pass
+        self.finish = True
+
 port = 3030
 s = Server(port)
 s.start()

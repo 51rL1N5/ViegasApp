@@ -1,6 +1,8 @@
 # Classe
 # Frame
 # ...
+# from socket import *
+
 class Command:
     PUBLIC      = 0
     LIST        = 1
@@ -13,6 +15,7 @@ class Command:
     LIST_SIZE   = 8 #numero de conectados
     LIST_END    = 9
     SERVER      = 200#mensagens do servidor, devem ser exibidas para todos os usuarios
+    SHUTDOWN    = 100
     NONE        = 255
 
 class Mode:
@@ -35,8 +38,10 @@ class Frame:
 
         if bitstream is not None:
             self.fromBitstream(bitstream)
+
     def bitStuff(self,nick):
         pass
+
     def buildBitstream(self):
         bitstream  = bytes(   [self.length]  )
         bitstream += bytes(   list( map(int, self.ip_orig.split('.')) )   )
@@ -76,6 +81,15 @@ class Frame:
         out+= 'Command:\t' + str(self.command) + '\n'
         out+= 'Data:\t'    + str(self.data)    + '\n'
         return out
+
+# class MySocket(socket):
+#     def sendFrame(self, frame):
+#         self.send(bytes(frame))
+#     def recvFrame(self):
+#         bitstream = self.recv(Const.LEN_MAX)
+#         if bitstream < Const.LEN_MIN:
+#             Exception('Erro: Frame size')
+#         return Frame(bitstream = bitstream)
 
 # ip_orig = '192.168.0.1'
 # ip_dest = '192.168.0.2'

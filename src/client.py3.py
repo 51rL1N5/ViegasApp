@@ -1,9 +1,12 @@
-from socket import *                       # sockets
+
 from threading import Thread
+from socket import *
+
 from classes import Frame
 from classes import Command as cmd
 from classes import Mode
 from classes import Const as const
+# from classes import MySocket
 
 class Client(Thread):
     def __init__(self, name, ip, port):
@@ -14,18 +17,19 @@ class Client(Thread):
         if len(name) < 6: #para garantir que o nickName sempre ocuparar 6 octetos
             name += (6 - len(name))*' '
         self.name = name
-        self.sock = socket(AF_INET,SOCK_STREAM)
-        # self.sock.settimeout(30)
-        # try:
-        # except Exception as erro:
-            # Exception(erro)
-            # print('Falha ao se conectar com o servidor')
+        try:
+            self.sock = socket(AF_INET,SOCK_STREAM)
+        except:
+            print('Falha ao estabelecer uma conexao com o servidor')
+            exit()
+        # self.sock.settimeout(120)
+
         self.finish= False
 
         self.ip_server  = ip
         self.port_server= port
         self.ip = self.sock.getsockname()[0]
-        # s.getsockname
+
         self.buffer = list()
         self.buffer_ready = False
 
@@ -36,12 +40,12 @@ class Client(Thread):
         self.sendFrame( Frame(self.ip,  self.ip_server, self.name, cmd.NEW, self.name) )
         # recebe respota do servidor
         frame_rec = self.recvFrame()
-
-        if frame_rec.command == cmd.INVALID:
+        if frame_rec.command is cmd.INVALID:
+            print('Servidor rejeitou cadastrar novo usuario')
             raise Exception('Servidor rejeitou cadastrar novo usuario')
         print('Conectado com o servidor!')
 
-        while not self.finish:
+        while self.finish is False:
             frame_rec = self.recvFrame()
             self.process(frame_rec)
 
@@ -49,16 +53,18 @@ class Client(Thread):
         try:
             self.sock.send(bytes(frame))
         except:
-            print('FALHA NA COMUNICAÇÃO COM SERVIDOR!!')
-            self.exit()
-            return
+            print('Falha na comunicacao com o servidor!')
+            self.finish = True
+            self.sock.close()
+            exit()
 
     def recvFrame(self):
         try:
             bitstream = self.sock.recv(const.LEN_MAX)
         except:
-            print("FALHA NA COMUNICAÇÃO COM O Servidor!!")
-            self.exit()
+            if self.finish is not True:
+                print("FALHA NA COMUNICAÇÃO COM O Servidor!!")
+                self.exit()
             exit()
         if len(bitstream) < const.LEN_MIN:
             return Frame()
@@ -103,10 +109,9 @@ class Client(Thread):
         # busca por list()
         elif func == 'list':
             print('request List, em andamento...')
-            self.requestList()
+            r = cmd.LIST
         # busca por exit()
         elif func == 'exit':
-            print('exit, em andamento...')
             r = cmd.EXIT
         # busca por list_size()
         elif func == 'list_size':
@@ -119,6 +124,8 @@ class Client(Thread):
         elif func == 'help':
             self.help();
             return (cmd.NONE, '')
+        elif func == 'shutdown':
+            return (cmd.SHUTDOWN, '')
         else:#ignorar
             print('comando ignorado')
             pass
@@ -126,15 +133,22 @@ class Client(Thread):
 
     def readLineEdit(self, line): #identifica as palavras chaves na linha lida no temrinal e encaminha para o servidor
         command, arg = self.identify_command(line)
-        if command is cmd.PUBLIC:
-            self.sendFrame
-            self.sendFrame( Frame(self.ip, self.ip_server, self.name, cmd.PUBLIC, arg) )
-        elif command is cmd.EXIT:
+
+        if command is cmd.NONE:
+            exit()
+
+        self.sendFrame( Frame(self.ip, self.ip_server, self.name, command, arg) )
+        if command is cmd.EXIT:
             print('Finalizando o cliente...')
-            self.sendFrame( Frame(self.ip, self.ip_server, self.name, cmd.EXIT, arg) )
-            self.exit()
-        else:#ignorar
-            pass
+            try:
+                self.sendFrame( Frame(self.ip, self.ip_server, self.name, cmd.EXIT, arg) )
+                self.exit()
+            except:
+                self.finish = True
+                exit()
+        if command is cmd.LIST:
+            self.requestList()
+
 
     def exit(self):
         self.sock.close()
@@ -151,16 +165,12 @@ class Client(Thread):
         for user in self.buffer:
             print(user)
         self.buffer_ready = False
-
+        print('____________Fim da Lista____________')
     def process(self, frame):
         command = frame.command
         data = frame.data
         orig = frame.nickName
         dest = frame.ip_dest
-
-        # if dest is not self.ip:
-        #     print('Recebi uma mensagem que nao era para mim ? ...')
-        #     return
 
         if command is cmd.LIST: #lista de conectados
             self.buffer.append(data)
@@ -187,21 +197,15 @@ class Client(Thread):
 ip = '127.0.0.1'
 port = 3030
 
-# while True:
+
 nickName = input('Informe seu nick Name:\t')
-    # try:
+
 my_client = Client(nickName, ip, port)
 my_client.start() #lanca thread
-        # break
-    # except Exception as error:
-    #     print('Erro:\t',error)
-    #     continue
 
 while my_client.connected():
     msg = input('Digite:\t')
     my_client.readLineEdit(msg)
-    pass
 
-my_client.exit()
 my_client.join() #aguarda para terminar a thread
 print('conexao encerrada')
