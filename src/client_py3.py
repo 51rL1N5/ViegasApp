@@ -1,12 +1,13 @@
 
 from threading import Thread
 from socket import *
+import sys
 
 from classes import Frame
 from classes import Command as cmd
 from classes import Mode
 from classes import Const as const
-# from classes import MySocket
+# from interface import Ui_MainWindow
 
 class Client(Thread):
     def __init__(self, name, ip, port):
@@ -22,7 +23,6 @@ class Client(Thread):
         except:
             print('Falha ao estabelecer uma conexao com o servidor')
             exit()
-        # self.sock.settimeout(120)
 
         self.finish= False
 
@@ -35,6 +35,7 @@ class Client(Thread):
 
         self.mode = Mode.PUBLIC
         self.dest_private = '' #nick do usuario com quem este esta em privado
+
     def run(self):
         self.sock.connect( (self.ip,self.port_server) )
         self.sendFrame( Frame(self.ip,  self.ip_server, self.name, cmd.NEW, self.name) )
@@ -57,7 +58,6 @@ class Client(Thread):
             self.finish = True
             self.sock.close()
             exit()
-
     def recvFrame(self):
         try:
             bitstream = self.sock.recv(const.LEN_MAX)
@@ -69,10 +69,12 @@ class Client(Thread):
         if len(bitstream) < const.LEN_MIN:
             return Frame()
         return Frame(bitstream = bitstream)
+
     def send_public(self, msg):
         pass
     def send_private(self, msg):
         pass
+
     def changeName(self,newName):
         pass
     def help(self):
@@ -83,7 +85,6 @@ class Client(Thread):
         print('chage_name(NewName)')
         print('list_size()')
         print('help()')
-
     def identify_command(self,string):
         # print('identify_command:',string)
 
@@ -130,8 +131,8 @@ class Client(Thread):
             print('comando ignorado')
             pass
         return (r,arg)
-
-    def readLineEdit(self, line): #identifica as palavras chaves na linha lida no temrinal e encaminha para o servidor
+    def readLineEdit(self): #identifica as palavras chaves na linha lida no temrinal e encaminha para o servidor
+        line = input()
         command, arg = self.identify_command(line)
 
         if command is cmd.NONE:
@@ -148,13 +149,10 @@ class Client(Thread):
                 exit()
         if command is cmd.LIST:
             self.requestList()
-
-
     def exit(self):
         self.sock.close()
         self.finish = True
         self.buffer.clear()
-
     def requestList(self):
         self.buffer.clear()
 
@@ -193,19 +191,41 @@ class Client(Thread):
             return False
         return True
 
+# ip = '127.0.0.1'
+# port = 3030
+#
+#
+# nickName = input('Informe seu nick Name:\t')
+#
+# my_client = Client(nickName, ip, port)
+# my_client.start() #lanca thread
 
-ip = '127.0.0.1'
-port = 3030
+# while my_client.connected():
+#     msg = input('Digite:\t')
+#     my_client.readLineEdit(msg)
+#
+# my_client.join() #aguarda para terminar a thread
+# print('conexao encerrada')
 
 
-nickName = input('Informe seu nick Name:\t')
+if __name__ == "__main__":
+    # app = QtWidgets.QApplication(sys.argv)
+    # MainWindow = QtWidgets.QMainWindow()
+    # ui = Ui_MainWindow()
+    # ui.setupUi(MainWindow)
+    # MainWindow.show()
 
-my_client = Client(nickName, ip, port)
-my_client.start() #lanca thread
+    ip = '127.0.0.1'
+    port = 3030
+    nickName = input('Informe seu nick Name(de até 6 caracteres!):\t')
 
-while my_client.connected():
-    msg = input('Digite:\t')
-    my_client.readLineEdit(msg)
+    my_client = Client(nickName, ip, port)
+    my_client.start() #lanca thread
 
-my_client.join() #aguarda para terminar a thread
-print('conexao encerrada')
+    while my_client.connected():
+        my_client.readLineEdit()
+
+    my_client.join() #aguarda para terminar a thread
+    print('conexao encerrada')
+
+    # sys.exit(app.exec_())

@@ -198,7 +198,6 @@ class Server(Thread):
                         user.exit()
                         usr.join()
                         self.connecteds.remove(user)
-
             else: #mensagem do servidor
                 try:
                     user.sendFrame( bytes((Frame('0.0.0.0', user.ip, 'SERVER', cmd.SERVER , message))) )
