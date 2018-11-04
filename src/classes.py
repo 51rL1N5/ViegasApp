@@ -6,7 +6,7 @@
 class Command:
     PUBLIC      = 0
     LIST        = 1
-    CHANGE_NAME = 2
+    NAME        = 2
     PRIVATE     = 3
     EXIT        = 4
     INVALID     = 5

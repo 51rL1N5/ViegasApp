@@ -79,6 +79,7 @@ class Ui_Chat_Client(Thread):
         self.listMsg.addItem('change_name()')
         self.listMsg.addItem('list()')
         self.listMsg.addItem('help()')
+        self.listMsg.addItem('name(newName)')
 
     def identify_command(self,string):
         r = cmd.PUBLIC
@@ -110,8 +111,9 @@ class Ui_Chat_Client(Thread):
         elif func == 'list_size':
             r = cmd.LIST_SIZE
         # busca por change_name(...)
-        elif func == 'change_name':
-            self.listMsg.addItem('Comando ainda nao implementado')
+        elif func == 'name':
+            # self.listMsg.addItem('Comando ainda nao implementado')
+            r = cmd.NAME
         # busca por help()
         elif func == 'help':
             print('help do identify')
@@ -120,7 +122,6 @@ class Ui_Chat_Client(Thread):
         elif func == 'shutdown':
             return (cmd.SHUTDOWN, '')
         else:#ignorar
-            self.listMsg.addItem('comando ignorado')
             pass
         return (r,arg)
     def readLineEdit(self): #identifica as palavras chaves na linha lida no temrinal e encaminha para o servidor
@@ -142,6 +143,7 @@ class Ui_Chat_Client(Thread):
                 exit()
         if command is cmd.LIST:
             self.requestList()
+
         self.listMsg.addItem('< você > %s' %line)
 
     def exit(self):
@@ -295,7 +297,7 @@ if __name__ == "__main__":
     import sys
 
     ip = '127.0.0.1'
-    port = 3131
+    port = 3030
     nickName = input('Informe seu nick Name(de até 6 caracteres!):\t')
 
     app = QtWidgets.QApplication(sys.argv)

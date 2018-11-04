@@ -82,7 +82,6 @@ class Server(Thread):
         self.serverSocket.bind((self.serverName,self.serverPort)) # bind do ip do servidor com a porta
         # inicia o servidor
         self.connecteds = []                            # vetor de client
-
         self.finish = False
 
     def run(self):
@@ -164,12 +163,13 @@ class Server(Thread):
                 user.exit()
                 user.join()
                 self.connecteds.remove(user)
-        elif user.lastFrame.command is cmd.CHANGE_NAME: #mudar de nome
+        elif user.lastFrame.command is cmd.NAME: #mudar de nome
             # falta verificar se nome ja esta em uso...
             newNick = user.lastFrame.data
             msg = 'Nick do '+ user.nickName + ' agora é ' + newNick
             user.nickName = newNick
             self.send_for_all(msg) #mensagem para todos
+
         elif user.lastFrame.command is cmd.PRIVATE:
             # dest = user.lastFrame.data
             print('Command 3- Ainda nao implementado')
@@ -261,10 +261,9 @@ class Server(Thread):
         line = input()
         self.identify_command(line)
 
-port = 3131
+port = 3030
 s = Server(port)
 s.start()
-
 s.help()
 
 while not s.finish:
