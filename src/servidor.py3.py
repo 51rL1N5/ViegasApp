@@ -8,9 +8,10 @@
 # importacao das bibliotecas
 from socket import *                       # sockets
 from threading import Thread
-from classes import Frame
+from classes import Frame, Mode
 from classes import Command as cmd
 from classes import Const as const
+
 # from classes import MySocket
 """
  ----- Lista de comandos ----------
@@ -37,12 +38,11 @@ class Connected(Thread):
         self.lastFrame = Frame()
 
         self.connected= True
-        self.flag = False
-        self.private= False
+        self.flag     = False #para interrupcao paralela
 
     def __str__(self):
         name = ''
-        if self.private == True:
+        if self.mode == Mode.PRIVATE:
             name = self.nickName + '(privado)'
         name = self.nickName
         return name + ', ' +str(self.ip) + ', ' + str(self.port)

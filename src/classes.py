@@ -15,6 +15,7 @@ class Command:
     LIST_END    = 9
     SERVER      = 200#mensagens do servidor, devem ser exibidas para todos os usuarios
     SHUTDOWN    = 100
+
     NONE        = 255
 
 class Mode:

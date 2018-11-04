@@ -73,13 +73,14 @@ class Ui_Chat_Client(Thread):
 
     def help(self):
         self.listMsg.addItem(5*'_'+'LISTA_DE_COMANDOS_DO_CLIENTE'+5*'_')
-        self.listMsg.addItem('private(dest)')
+        self.listMsg.addItem('private(dest,msg)')
         self.listMsg.addItem('public()')
         self.listMsg.addItem('exit()')
         self.listMsg.addItem('change_name()')
         self.listMsg.addItem('list()')
         self.listMsg.addItem('help()')
         self.listMsg.addItem('name(newName)')
+        self.listMsg.addItem('clear()')
 
     def identify_command(self,string):
         r = cmd.PUBLIC
@@ -96,12 +97,13 @@ class Ui_Chat_Client(Thread):
         func.replace(' ','')
         arg.replace(' ','')
         func = func.lower()
-        arg = arg.lower()
 
         # busca por private(...)
         if func == 'private':
             self.listMsg.addItem('Comando ainda nao implementado')
         # busca por list()
+        elif func == 'clear':
+            self.listMsg.clear()
         elif func == 'list':
             r = cmd.LIST
         # busca por exit()
@@ -113,10 +115,12 @@ class Ui_Chat_Client(Thread):
         # busca por change_name(...)
         elif func == 'name':
             # self.listMsg.addItem('Comando ainda nao implementado')
-            r = cmd.NAME
+            if self.nickNameValid(arg) is True:
+                r = cmd.NAME
+                self.label_myName.setText(arg)
+
         # busca por help()
         elif func == 'help':
-            print('help do identify')
             self.help();
             return (cmd.NONE, '')
         elif func == 'shutdown':
