@@ -70,11 +70,6 @@ class Client(Thread):
             return Frame()
         return Frame(bitstream = bitstream)
 
-    def send_public(self, msg):
-        pass
-    def send_private(self, msg):
-        pass
-
     def changeName(self,newName):
         pass
     def help(self):

@@ -153,7 +153,6 @@ class Ui_Chat_Client(Thread):
         self.finish = True
         self.buffer.clear()
 
-
     def requestList(self):
         self.buffer.clear()
 
@@ -201,6 +200,7 @@ class Ui_Chat_Client(Thread):
         Chat_Client.setObjectName("Chat_Client")
         Chat_Client.resize(366, 294)
         Chat_Client.setMaximumSize(QtCore.QSize(366, 294))
+
         self.pushButton_help = QtWidgets.QPushButton(Chat_Client)
         self.pushButton_help.setGeometry(QtCore.QRect(290, 10, 51, 21))
         self.pushButton_help.setObjectName("pushButton_help")
@@ -295,7 +295,7 @@ if __name__ == "__main__":
     import sys
 
     ip = '127.0.0.1'
-    port = 3030
+    port = 3131
     nickName = input('Informe seu nick Name(de até 6 caracteres!):\t')
 
     app = QtWidgets.QApplication(sys.argv)

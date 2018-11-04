@@ -191,6 +191,8 @@ class Server(Thread):
         for user in self.connecteds:
             if orig is not None:
                 #mensagem de um conectado
+                print('< %s > %s' %(orig, message))
+
                 if  user.nickName is not orig.nickName:
                     try:
                         user.sendFrame(bytes(Frame(orig.ip, user.ip, orig.nickName, cmd.PUBLIC, message)))
@@ -208,7 +210,7 @@ class Server(Thread):
     def exit(self):
         self.send_for_all('SERVIDOR ESTA SENDO DESLIGADO!')
         self.finish = True
-        for user in self.connecteds():
+        for user in self.connecteds:
             user.exit()
             user.join()
             try:
@@ -217,10 +219,53 @@ class Server(Thread):
                 pass
         self.finish = True
 
-port = 3030
+    def identify_command(self,string):
+        # verifica se pode ser uma funcao
+        if string.find('(') is -1: #apenas uma mensagem
+            return (r,string)
+        if string.find(')') is -1:
+            return (r,string)
+
+        l_string = string.split('(')
+        func = l_string[0]
+        arg  = l_string[1].replace(')','')
+
+        func.replace(' ','')
+        arg.replace(' ','')
+        func = func.lower()
+        arg = arg.lower()
+
+        # busca por list()
+        if func == 'list':
+            print('____________Lista de Conectados____________')
+            for user in self.connecteds:
+                print(user)
+            print('____________Fim da Lista____________')
+        # busca por exit()
+        elif func == 'exit':
+            self.exit()
+        # busca por help()
+        elif func == 'help':
+            self.help()
+        else:#ignorar
+            pass
+    def help(self):
+        print(5*'_'+'Comandos do servidor'+ 5*'_')
+        print('help()')
+        print('exit()')
+        print('list()')
+        print(10*'_'+ len('Comandos do servidor')*'_')
+
+    def readLine(self):
+        line = input()
+        self.identify_command(line)
+
+
+port = 3131
 s = Server(port)
 s.start()
 
 while not s.finish:
+    s.readLine()
     pass
 s.join()

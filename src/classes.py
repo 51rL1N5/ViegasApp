@@ -12,7 +12,6 @@ class Command:
     INVALID     = 5
     OK          = 6
     NEW         = 7
-    LIST_SIZE   = 8 #numero de conectados
     LIST_END    = 9
     SERVER      = 200#mensagens do servidor, devem ser exibidas para todos os usuarios
     SHUTDOWN    = 100
