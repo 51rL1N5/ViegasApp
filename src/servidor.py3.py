@@ -140,7 +140,7 @@ class Server(Thread):
 
           self.connecteds.append(connected)
           welcome = str(connected.nickName) + '\tacabou de entrar!'
-          print(welcome)
+          # print(welcome)
           self.send_for_all(welcome)
 
     def process(self,user):
@@ -203,6 +203,7 @@ class Server(Thread):
             else: #mensagem do servidor
                 try:
                     user.sendFrame( bytes((Frame('0.0.0.0', user.ip, 'SERVER', cmd.SERVER , message))) )
+                    print(message)
                 except:
                     user.exit()
                     user.join()
@@ -260,12 +261,14 @@ class Server(Thread):
         line = input()
         self.identify_command(line)
 
-
 port = 3131
 s = Server(port)
 s.start()
 
+s.help()
+
 while not s.finish:
     s.readLine()
     pass
+print('Servidor finalizado com sucesso!')
 s.join()
