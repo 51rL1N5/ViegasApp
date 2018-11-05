@@ -100,12 +100,18 @@ class Ui_Chat_Client(Thread):
 
         # busca por private(...)
         if func == 'private':
-            self.listMsg.addItem('Comando ainda nao implementado')
+            r = cmd.PRIVATE
+            dest = arg.split(',')[0]
+            msg  = arg[len(dest)+1:]
+            if len(dest) < 6:
+                dest += ( 6 - len(dest))*' '
+            arg = dest + ',' +msg
         # busca por list()
         elif func == 'clear':
             self.listMsg.clear()
         elif func == 'list':
             r = cmd.LIST
+            self.listWidget.clear()
         # busca por exit()
         elif func == 'exit':
             r = cmd.EXIT
@@ -137,6 +143,7 @@ class Ui_Chat_Client(Thread):
             exit()
 
         self.sendFrame( Frame(self.ip, self.ip_server, self.name, command, arg) )
+
         if command is cmd.EXIT:
             print('Finalizando o cliente...')
             try:
@@ -147,6 +154,7 @@ class Ui_Chat_Client(Thread):
                 exit()
         if command is cmd.LIST:
             self.requestList()
+
 
         self.listMsg.addItem('< você > %s' %line)
 
@@ -301,7 +309,7 @@ if __name__ == "__main__":
     import sys
 
     ip = '127.0.0.1'
-    port = 3030
+    port = 3131
     nickName = input('Informe seu nick Name(de até 6 caracteres!):\t')
 
     app = QtWidgets.QApplication(sys.argv)

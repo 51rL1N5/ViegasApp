@@ -31,7 +31,7 @@ class Connected(Thread):
         # self.addr     = addr
         self.nickName = nickName
         self.socket   = socket
-        self.socket.settimeout(10)
+        self.socket.settimeout(2)
         self.ip       = addr[0]
         self.port     = addr[1]
 
@@ -41,9 +41,6 @@ class Connected(Thread):
         self.flag     = False #para interrupcao paralela
 
     def __str__(self):
-        name = ''
-        if self.mode == Mode.PRIVATE:
-            name = self.nickName + '(privado)'
         name = self.nickName
         return name + ', ' +str(self.ip) + ', ' + str(self.port)
 
@@ -153,8 +150,10 @@ class Server(Thread):
                     user.sendFrame( Frame(self.serverSocket.getsockname()[0], user.ip, 'SERVER', cmd.LIST, str(other)))
                 except:
                     user.join()
+                    user.sendFrame( Frame(self.serverSocket.getsockname()[0], user.ip, 'SERVER', cmd.LIST_END, str(other)))
                     user.exit()
                     self.connecteds.remove(user)
+
             user.sendFrame( Frame(self.serverSocket.getsockname()[0], user.ip, 'SERVER', cmd.LIST_END, str(other)))
             #para confirmar o final da lista
             try:
@@ -171,8 +170,15 @@ class Server(Thread):
             self.send_for_all(msg) #mensagem para todos
 
         elif user.lastFrame.command is cmd.PRIVATE:
-            # dest = user.lastFrame.data
-            print('Command 3- Ainda nao implementado')
+            # busca o usuario cujo nick seja: user.lastFrame.nickname
+            dest = user.lastFrame.data.split(',')[0]
+            msg  = user.lastFrame.data[len(dest)+1:]
+
+            for other_user in self.connecteds:
+                if dest == other_user.nickName:
+                    other_user.sendFrame( Frame(user.ip, other_user.ip, user.nickName, cmd.PRIVATE, msg) )
+            # envia a mensagem diretamente para ele
+
         elif user.lastFrame.command is cmd.EXIT:
             msg = user.nickName + ' saiu!'
             self.send_for_all(msg)
@@ -184,25 +190,26 @@ class Server(Thread):
                 self.exit()
         else:
             #ignorar
-            print('comando nao reconhecido')
+            pass
         user.flag = False #pedido atendido
     def send_for_all(self,message, orig = None):
         # ENVIAR PRA GALERA
+        if orig is not None:
+            print('< %s > %s' %(orig, message))
+
         for user in self.connecteds:
             if orig is not None:
                 #mensagem de um conectado
-                print('< %s > %s' %(orig, message))
-
-                if  user.nickName is not orig.nickName:
+                if  user.nickName != orig.nickName:
                     try:
-                        user.sendFrame(bytes(Frame(orig.ip, user.ip, orig.nickName, cmd.PUBLIC, message)))
+                        user.sendFrame(Frame(orig.ip, user.ip, orig.nickName, cmd.PUBLIC, message))
                     except:
                         user.exit()
                         usr.join()
                         self.connecteds.remove(user)
             else: #mensagem do servidor
                 try:
-                    user.sendFrame( bytes((Frame('0.0.0.0', user.ip, 'SERVER', cmd.SERVER , message))) )
+                    user.sendFrame( (Frame('0.0.0.0', user.ip, 'SERVER', cmd.SERVER , message)) )
                     print(message)
                 except:
                     user.exit()
@@ -256,12 +263,11 @@ class Server(Thread):
         print('exit()')
         print('list()')
         print(10*'_'+ len('Comandos do servidor')*'_')
-
     def readLine(self):
         line = input()
         self.identify_command(line)
 
-port = 3030
+port = 3131
 s = Server(port)
 s.start()
 s.help()
