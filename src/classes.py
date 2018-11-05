@@ -16,7 +16,7 @@ class Command:
     SERVER      = 200#mensagens do servidor, devem ser exibidas para todos os usuarios
     SHUTDOWN    = 100
 
-    NONE        = 255
+    NULL        = 255
 
 class Mode:
     PUBLIC  = 0  #MODO public

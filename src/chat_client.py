@@ -3,6 +3,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from threading import Thread
 from socket import *
 import sys
+import time
 
 from classes import Frame
 from classes import Command as cmd
@@ -24,7 +25,8 @@ class Ui_Chat_Client(Thread):
             self.sock = socket(AF_INET,SOCK_STREAM)
         except:
             print('Falha ao estabelecer uma conexao com o servidor')
-            exit()
+            self.exit()
+            return
 
         self.finish= False
 
@@ -58,7 +60,7 @@ class Ui_Chat_Client(Thread):
             print('Falha na comunicacao com o servidor!')
             self.finish = True
             self.sock.close()
-            exit()
+            return
     def recvFrame(self):
         try:
             bitstream = self.sock.recv(const.LEN_MAX)
@@ -66,7 +68,8 @@ class Ui_Chat_Client(Thread):
             if self.finish is not True:
                 print("FALHA NA COMUNICAÇÃO COM O Servidor!!")
                 self.exit()
-            exit()
+            # exit()
+            return Frame()
         if len(bitstream) < const.LEN_MIN:
             return Frame()
         return Frame(bitstream = bitstream)
@@ -109,15 +112,13 @@ class Ui_Chat_Client(Thread):
         # busca por list()
         elif func == 'clear':
             self.listMsg.clear()
+            r = cmd.NULL
         elif func == 'list':
             r = cmd.LIST
             self.listWidget.clear()
         # busca por exit()
         elif func == 'exit':
             r = cmd.EXIT
-        # busca por list_size()
-        elif func == 'list_size':
-            r = cmd.LIST_SIZE
         # busca por change_name(...)
         elif func == 'name':
             # self.listMsg.addItem('Comando ainda nao implementado')
@@ -128,7 +129,8 @@ class Ui_Chat_Client(Thread):
         # busca por help()
         elif func == 'help':
             self.help();
-            return (cmd.NONE, '')
+            # return (cmd.NULL, '')
+            r = cmd.NULL
         elif func == 'shutdown':
             return (cmd.SHUTDOWN, '')
         else:#ignorar
@@ -139,11 +141,10 @@ class Ui_Chat_Client(Thread):
         command, arg = self.identify_command(line)
         self.lineEdit.clear()
 
-        if command is cmd.NONE:
-            exit()
+        if command is cmd.NULL:
+            return
 
         self.sendFrame( Frame(self.ip, self.ip_server, self.name, command, arg) )
-
         if command is cmd.EXIT:
             print('Finalizando o cliente...')
             try:
@@ -154,7 +155,6 @@ class Ui_Chat_Client(Thread):
                 exit()
         if command is cmd.LIST:
             self.requestList()
-
 
         self.listMsg.addItem('< você > %s' %line)
 
@@ -169,9 +169,12 @@ class Ui_Chat_Client(Thread):
 
     def requestList(self):
         self.buffer.clear()
+        time_max = 10
+        time_count= 0
 
-        while not self.buffer_ready: #aguarda pelo final da lista
-            pass
+        while (self.buffer_ready == False) and (time_count <= time_max): #aguarda pelo final da lista
+            time.sleep(0.1)
+            time_count += 1
 
         self.listMsg.addItem('____________Lista de Conectados____________')
         for user in self.buffer:
@@ -188,19 +191,16 @@ class Ui_Chat_Client(Thread):
 
         if command is cmd.LIST: #lista de conectados
             self.buffer.append(data)
-        # elif command is cmd.LIST_SIZE:
-        #     print('\n****Numero de conectados no momento***:\t', data)
         elif command is cmd.PUBLIC: #mensagem do chat public
-            # print(orig, '  Diz:\t', data)
             self.listMsg.addItem('< %s > %s' %(orig, data))
         elif command is cmd.PRIVATE: #mensagem do chat privado
-            # print(orig, '(private) Diz:\t', data)
             self.listMsg.addItem('< %s >(PRIVATE) %s' %(orig, data))
         elif command is cmd.LIST_END: #servidor mandou toda a lista de usuarios conectados
             self.buffer_ready = True
         elif command is cmd.SERVER:
-            # print(5*'*' + 'MENSAGEM DO SERVIDOR' + 5*'*' + ':\t', data)
             self.listMsg.addItem('{ %s } %s' %('SERVIDOR', data))
+        elif command is cmd.EXIT:
+            self.exit()
         else:#ignorar demais comandos
             pass
     def connected(self):
@@ -290,7 +290,6 @@ class Ui_Chat_Client(Thread):
         self.label_myName.setText(self.name)
 
         self.pushButton_help.clicked.connect(self.help)
-        # self.label.linkActivated.connect(self.showMsg) #signal para exibir mensagens
         self.lineEdit.returnPressed.connect(self.readLineEdit)
         Chat_Client.finished.connect(self.exit)
 

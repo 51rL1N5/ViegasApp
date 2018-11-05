@@ -12,6 +12,8 @@ from classes import Frame, Mode
 from classes import Command as cmd
 from classes import Const as const
 
+import time
+import os
 # from classes import MySocket
 """
  ----- Lista de comandos ----------
@@ -31,7 +33,7 @@ class Connected(Thread):
         # self.addr     = addr
         self.nickName = nickName
         self.socket   = socket
-        self.socket.settimeout(2)
+        self.socket.settimeout(5)
         self.ip       = addr[0]
         self.port     = addr[1]
 
@@ -45,7 +47,9 @@ class Connected(Thread):
         return name + ', ' +str(self.ip) + ', ' + str(self.port)
 
     def run(self): #metodo para a thread
+        time_max = 10
         while self.connected:
+            time_count= 0
             try:
                 bitstream = self.socket.recv(const.LEN_MAX) # todo frame ocupa no maximo 56 bytes
                 self.lastFrame = Frame(bitstream = bitstream)
@@ -53,7 +57,9 @@ class Connected(Thread):
             except:
                 continue
 
-            while self.flag: #aguarda o pedido ser tratado pelo server
+            while (self.flag == True) and (time_count < time_max): #aguarda o pedido ser tratado pelo server
+                time.sleep(0.05)
+                time_count+=1
                 pass
         self.socket.close()
 
@@ -95,7 +101,7 @@ class Server(Thread):
         Caso nao haja novos pedidos de conexao, o servidor ira tratar dos pedidos
         feitos pelos usuarios conectados.
         """
-        while not self.finish:
+        while self.finish == False:
           try:
               connectionSocket, addr = self.serverSocket.accept() # aceita as conexoes dos clientes
           except:
@@ -136,7 +142,6 @@ class Server(Thread):
 
           self.connecteds.append(connected)
           welcome = str(connected.nickName) + '\tacabou de entrar!'
-          # print(welcome)
           self.send_for_all(welcome)
 
     def process(self,user):
@@ -196,7 +201,8 @@ class Server(Thread):
         # ENVIAR PRA GALERA
         if orig is not None:
             print('< %s > %s' %(orig, message))
-
+        else:
+            print(message)
         for user in self.connecteds:
             if orig is not None:
                 #mensagem de um conectado
@@ -210,19 +216,17 @@ class Server(Thread):
             else: #mensagem do servidor
                 try:
                     user.sendFrame( (Frame('0.0.0.0', user.ip, 'SERVER', cmd.SERVER , message)) )
-                    print(message)
                 except:
                     user.exit()
                     user.join()
                     self.connecteds.remove(user)
     def exit(self):
         self.send_for_all('SERVIDOR ESTA SENDO DESLIGADO!')
-        self.finish = True
         for user in self.connecteds:
-            user.exit()
-            user.join()
             try:
-                self.connecteds.remove(user)
+                user.sendFrame( (Frame('0.0.0.0', user.ip, 'SERVER', cmd.EXIT , '')) )
+                user.exit()
+                user.join()
             except:
                 pass
         self.finish = True
@@ -230,9 +234,9 @@ class Server(Thread):
     def identify_command(self,string):
         # verifica se pode ser uma funcao
         if string.find('(') is -1: #apenas uma mensagem
-            return (r,string)
+            return
         if string.find(')') is -1:
-            return (r,string)
+            return
 
         l_string = string.split('(')
         func = l_string[0]
@@ -255,6 +259,9 @@ class Server(Thread):
         # busca por help()
         elif func == 'help':
             self.help()
+        elif func == 'clear':
+            os.system('clear')
+            self.help()
         else:#ignorar
             pass
     def help(self):
@@ -262,6 +269,7 @@ class Server(Thread):
         print('help()')
         print('exit()')
         print('list()')
+        print('clear()')
         print(10*'_'+ len('Comandos do servidor')*'_')
     def readLine(self):
         line = input()
